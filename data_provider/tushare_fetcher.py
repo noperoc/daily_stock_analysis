@@ -74,7 +74,7 @@ class TushareFetcher(BaseFetcher):
     
     def _init_api(self) -> None:
         """
-        初始化 Tushare API
+        初始化 Tushare API (适配自定义代理接口)
         
         如果 Token 未配置，此数据源将不可用
         """
@@ -87,13 +87,22 @@ class TushareFetcher(BaseFetcher):
         try:
             import tushare as ts
             
-            # 设置 Token
-            ts.set_token(config.tushare_token)
+            # 获取配置中的 token
+            token = config.tushare_token
             
-            # 获取 API 实例
-            self._api = ts.pro_api()
+            # --- 修改开始：适配特殊代理服务器 ---
             
-            logger.info("Tushare API 初始化成功")
+            # 1. 初始化实例时直接传入 token
+            self._api = ts.pro_api(token)
+            
+            # 2. 强制设置私有属性 (关键步骤)
+            # 必须设置 __token 和 __http_url 才能通过那个代理服务器验证
+            self._api._DataApi__token = token
+            self._api._DataApi__http_url = 'http://lianghua.nanyangqiankun.top'
+            
+            # --- 修改结束 ---
+            
+            logger.info("Tushare API (自定义服务器) 初始化成功")
             
         except Exception as e:
             logger.error(f"Tushare API 初始化失败: {e}")
